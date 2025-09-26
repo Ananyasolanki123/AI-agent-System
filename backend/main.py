@@ -14,6 +14,9 @@ from agents.data_agent import DataIntelligenceAgent
 load_dotenv()
 
 app = FastAPI()
+@app.get("/")
+def root():
+    return {"message": "Backend is running"}
 
 app.add_middleware(
     CORSMiddleware,

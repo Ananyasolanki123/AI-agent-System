@@ -1,48 +1,57 @@
-import os
-from dotenv import load_dotenv
-from typing import Literal
+from langchain_core.prompts import ChatPromptTemplate
 from pydantic import BaseModel, Field
 from langchain_groq import ChatGroq
-from langchain.prompts import ChatPromptTemplate
-from langchain.output_parsers import PydanticOutputParser
+import os
+from dotenv import load_dotenv
 
 load_dotenv()
 
 class RouteQuery(BaseModel):
-    destination: Literal["research", "data"] = Field(
-        ...,
-        description=(
-            "The agent to route the query to. "
-            "'research' = document-based queries (summary, keywords, methods, literature, explanations). "
-            "'data' = dataset-based queries (numerical analysis, stats, trends, visualization)."
-        )
+    """Route a user query to the appropriate agent."""
+    destination: str = Field(
+        description="The destination agent, must be one of 'data' or 'research'.",
+        enum=["data", "research"]
     )
 
 class OrchestrationAgent:
-    """
-    Routes incoming user queries to the appropriate agent (ResearchAgent or DataIntelligenceAgent).
-    Uses Groq's LLM (via LangChain) to classify the query.
-    """
     def __init__(self):
         self.llm = ChatGroq(
-            groq_api_key=os.getenv("GROQ_API_KEY"),
+            temperature=0, 
             model_name="llama-3.1-8b-instant",
-            temperature=0 
+            groq_api_key=os.getenv("GROQ_API_KEY")
         )
-        self.parser = PydanticOutputParser(pydantic_object=RouteQuery)
-        self.prompt = ChatPromptTemplate.from_messages([
-            ("system",
-             "You are a router. Classify a user's query as either 'research' or 'data'.\n"
-             "- Use 'research' for document-based queries (e.g., summarize a paper, extract methods, generate keywords).\n"
-             "- Use 'data' for dataset queries and if query involves summarize or research based query return this type of query is not supported here. (e.g., analyze sales trends, calculate averages, plot a chart).\n"
-             "Return ONLY in JSON format that matches this schema:\n{format_instructions}"
-             ),
-            ("human", "{query}")
-        ]).partial(format_instructions=self.parser.get_format_instructions())
+
+        structured_llm = self.llm.with_structured_output(RouteQuery)
+
+        system_prompt = """You are an expert at routing a user query to a 'data' agent or a 'research' agent based on the query.
+
+- The 'data' agent handles queries about analyzing numerical or categorical data from tables (like CSVs). This includes calculations, trends, plotting, sales figures, revenue, etc.
+- The 'research' agent handles queries about understanding, summarizing, or finding information within text documents (like PDFs).
+
+You must route the user's query to either the 'data' or 'research' agent.
+"""
+
+        prompt = ChatPromptTemplate.from_messages(
+            [
+                ("system", system_prompt),
+                ("human", "Route the following user query: {query}"),
+            ]
+        )
+
+        self.chain = prompt | structured_llm
 
     def route_query(self, query: str) -> str:
-        chain = self.prompt | self.llm | self.parser
-        response: RouteQuery = chain.invoke({"query": query})
-        print(f"[OrchestrationAgent] Query: {query}")
-        print(f"[OrchestrationAgent] Routed to: {response.destination}")
-        return response.destination
+        """
+        Routes the user's query to the appropriate agent.
+        """
+        try:
+            response = self.chain.invoke({"query": query})
+            
+            print(f"[OrchestrationAgent] Query: {query}")
+            print(f"[OrchestrationAgent] Routed to: {response.destination}")
+            
+            return response.destination
+        except Exception as e:
+            print(f"Error routing query: {e}")
+            return "research"
+

@@ -27,7 +27,6 @@ class DataIntelligenceAgent:
         self.df = self.load_latest_data_from_db()
 
     def load_latest_data_from_db(self) -> Optional[pd.DataFrame]:
-        # Tries to load the last saved DataFrame from the SQLite DB.
         try:
             if not os.path.exists(self.db_path):
                 return None
@@ -38,7 +37,6 @@ class DataIntelligenceAgent:
                 if not tables:
                     return None
                 
-                # We'll just grab the most recently created table
                 self.table_name = tables[-1]
                 df = pd.read_sql_table(self.table_name, self.engine)
                 return self._clean_data(df)
@@ -48,18 +46,15 @@ class DataIntelligenceAgent:
             return None
 
     def load_data(self, file_path: str, file_type: str, file_name: str) -> str:
-        """Loads and cleans a CSV or Excel file, then stores it in a SQLite db."""
         self.original_file_name = file_name
         try:
             if file_type == 'csv':
-                # Trying to auto-detect the delimiter
                 try:
                     with open(file_path, 'r', encoding='utf-8') as f:
                         sample = f.read(1024)
                         dialect = csv.Sniffer().sniff(sample)
                         self.df = pd.read_csv(file_path, delimiter=dialect.delimiter, on_bad_lines='skip')
                 except (csv.Error, pd.errors.ParserError):
-                    # Fallback if auto-detection fails
                     self.df = pd.read_csv(file_path, on_bad_lines='skip')
 
             elif file_type == 'xlsx':
@@ -67,13 +62,11 @@ class DataIntelligenceAgent:
             else:
                 return "Unsupported file type. Please upload a CSV or Excel file."
             
-            # Make sure the dataframe isn't empty
             if self.df.empty:
                 return "The uploaded file is empty or contains no valid data. Please check your file and try again."
             
             self.df = self._clean_data(self.df)
             
-            # Save the DataFrame to a new table with a timestamp
             self.table_name = f"data_{pd.Timestamp.now().strftime('%Y%m%d%H%M%S')}"
             self.df.to_sql(self.table_name, self.engine, index=False, if_exists='replace')
             
@@ -86,7 +79,6 @@ class DataIntelligenceAgent:
         """A quick function to clean up the dataframe."""
         df.columns = df.columns.str.lower()
         
-        # Clean up numerical columns
         for col in df.columns:
             if 'sales' in col or 'revenue' in col or 'price' in col or 'cost' in col:
                 df.loc[:, col] = pd.to_numeric(
@@ -94,14 +86,12 @@ class DataIntelligenceAgent:
                     errors='coerce'
                 )
         
-        # Fill missing values
         for col in df.select_dtypes(include=['number']).columns:
             df.loc[:, col] = df[col].fillna(df[col].mean())
             
         for col in df.select_dtypes(include=['object']).columns:
             df.loc[:, col] = df[col].fillna('unknown')
             
-        # Clean up text columns
         for col in df.columns:
             if df[col].dtype == 'object':
                 df.loc[:, col] = df[col].astype(str).str.lower()
@@ -116,7 +106,6 @@ class DataIntelligenceAgent:
         return df
 
     def handle_query(self, query: str) -> Dict[str, Any]:
-        """Routes the user's query to the right function."""
         if self.df is None:
             return {
                 "type": "text",
@@ -125,17 +114,14 @@ class DataIntelligenceAgent:
 
         query_lower = query.lower()
 
-        # Check for plotting queries first
         if any(keyword in query_lower for keyword in ["plot", "chart", "graph"]):
             return self._generate_dynamic_plot(query)
         
-        # Otherwise, assume it's a numerical query
         return self._execute_numerical_query(query)
 
     def _execute_numerical_query(self, query: str) -> Dict[str, Any]:
         """Performs a precise numerical calculation based on the user's query."""
         
-        # A Pydantic model to help the LLM structure its output
         class NumericalQueryInfo(BaseModel):
             query_type: str = Field(description="The type of user query, either 'numerical', 'categorical', or 'general'.")
             operation: Optional[str] = Field(description="The mathematical operation to perform, e.g., 'sum', 'mean', 'count', 'min', 'max'.")
@@ -175,7 +161,6 @@ class DataIntelligenceAgent:
         if query_info.error:
             return {"type": "text", "message": query_info.error}
             
-        # Route the request based on the query type
         if query_info.query_type == 'numerical':
             operation_map = {
                 "sum": "sum", "mean": "mean", "average": "mean", "avg": "mean",
@@ -192,7 +177,6 @@ class DataIntelligenceAgent:
             if column_to_query not in self.df.columns:
                 return {"type": "text", "message": f"Column '{column_to_query}' not found in the DataFrame."}
             
-            # Perform the calculation
             try:
                 result = getattr(self.df[column_to_query], operation)()
                 
@@ -224,7 +208,7 @@ class DataIntelligenceAgent:
                     "message": f"An error occurred while processing the categorical query: {e}"
                 }
 
-        else: # General query type
+        else: 
             prompt = self._create_llm_prompt(query)
             llm_response = self.llm.invoke(prompt)
             return {"type": "text", "message": llm_response.content.strip()}
@@ -248,7 +232,6 @@ class DataIntelligenceAgent:
     def _generate_dynamic_plot(self, query: str) -> Dict[str, Any]:
         """Generates an interactive plot based on the user's query."""
         
-        # A Pydantic model to help the LLM structure its plot output
         class PlotInfo(BaseModel):
             x_axis: str = Field(description="The name of the column for the x-axis.")
             y_axis: Optional[str] = Field(description="The name of the column for the y-axis. Can be null if a single variable is being plotted.")
@@ -294,7 +277,6 @@ class DataIntelligenceAgent:
             y_col_llm = plot_info.y_axis
             plot_type = plot_info.plot_type
             
-            # Normalize column names for robust lookup
             x_col = self._find_column(x_col_llm)
             y_col = self._find_column(y_col_llm) if y_col_llm else None
 
@@ -349,7 +331,6 @@ class DataIntelligenceAgent:
                    "message": f"Unsupported plot type: {plot_type}. Please try again."
                }
             
-            # Convert plot to JSON for the frontend
             return {"type": "plot", "plot": fig.to_json(), "caption": f"Here is an interactive plot of {x_col} and {y_col}."}
 
         except Exception as e:

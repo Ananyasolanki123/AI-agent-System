@@ -1,18 +1,11 @@
 FROM python:3.10-slim
-
 WORKDIR /app
-
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
-
-RUN mkdir -p data/csv
-RUN mkdir -p data/pdfs
-RUN mkdir -p backend/vector_store
-RUN mkdir -p backend/data
-
-COPY main.py .
-COPY agents/ agents/
-
+RUN pip install --default-timeout=100 --upgrade pip
+RUN pip install --default-timeout=100 "numpy<2.0"
+COPY requirement.txt .
+RUN pip install --default-timeout=100 torch==2.2.2+cpu --find-links https://download.pytorch.org/whl/cpu/torch_stable.html
+RUN pip install --default-timeout=100 --no-cache-dir -r requirement.txt
+COPY . .
 EXPOSE 8000
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
 
-CMD ["gunicorn", "-w", "4", "-k", "uvicorn.workers.UvicornWorker", "--bind", "0.0.0.0:8000", "main:app"]

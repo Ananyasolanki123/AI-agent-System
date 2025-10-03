@@ -1,54 +1,117 @@
-AI Data & Research Intelligence Agent
-This repository contains a multi-agent AI system designed to analyze and answer questions from both structured data (CSV/XLSX) and unstructured research documents (PDF/DOCX). It features a Streamlit frontend for user interaction and a FastAPI backend that orchestrates three different AI agents.
+# 🚀 Insight Agent: AI Data & Research Assistant
 
-Key Features
-Multi-Agent Architecture: The system uses a dedicated Orchestration Agent to intelligently route user queries to the correct specialized agent.
+**Insight Agent** is a sophisticated **multi-agent AI system** that helps you analyze both **structured datasets** (CSVs, Excel) and **unstructured documents** (PDFs, DOCX). Simply upload a file and interact with it using **natural language** to get insights, generate charts, summarize content, or ask specific questions.
 
-Data Intelligence Agent: Ingests and analyzes structured data from CSV or XLSX files. It can perform calculations, answer natural language questions, and generate interactive plots.
+---
 
-Research Agent: Processes unstructured documents like PDFs and DOCX files. It can provide concise summaries, extract keywords, and answer specific questions based on the document content.
+## ✨ Key Features
 
-Dockerized Deployment: The entire application is containerized using Docker and Docker Compose, ensuring a consistent and reproducible development and deployment environment.
+* **🧮 Dual-Capability Analysis**
+  Seamlessly works with **tabular data** and **text-based documents** in one interface.
 
-Secure API Key Management: The GROQ API key is handled securely at runtime using Docker secrets and a .env file, preventing it from being hardcoded.
+* **💬 Natural Language Q&A**
+  Ask complex questions in plain English and get precise answers.
 
-Getting Started
-Prerequisites
-Docker is required to run the application.
+* **📊 Automated Chart Generation**
+  Creates **interactive Plotly charts** from data (e.g., “Plot sales trends over time”).
 
-An API key from Groq is needed for the AI models.
+* **📖 Intelligent Document Analysis**
+  Summarizes research papers, extracts keywords, and answers content-based questions via a **RAG pipeline**.
 
-Once you have your key, create a file named .env in the root of your project directory with the following content:
+* **🤖 Smart Agent Routing**
+  A central orchestrator routes your request to the correct specialist agent (**Data** or **Research**).
 
-GROQ_API_KEY="YOUR_API_KEY_HERE"
+---
 
-Quick Start
-Clone this repository to your local machine.
+## 🏗️ System Architecture
 
-Open a terminal and navigate to the root directory of the project.
+Insight Agent is powered by a **multi-agent architecture**:
 
-Run the following command to build the Docker images and start the services:
+* **Central Orchestrator Agent** – interprets your query and delegates to…
 
-docker compose up --build
+  * **Data Agent** – handles CSV/Excel analysis
+  * **Research Agent** – handles PDF/DOCX analysis
 
-Once the build is complete, open your web browser and go to http://localhost:8501.
+**Frontend:** Streamlit
+**Backend:** FastAPI (with Uvicorn)
+**AI/ML:** LangChain, Groq (Llama 3.1), RAG, Pandas, Plotly
+**Databases:** ChromaDB (vector storage), SQLite (structured storage)
+**Deployment:** Docker + Docker Compose
 
-Project Structure
-backend/: Contains the FastAPI application and the core AI agent logic.
+---
 
-frontend/: Contains the Streamlit application for the user interface.
+## 🛠️ Tech Stack
 
-docker-compose.yml: Defines the services and configurations for Docker.
+| Category       | Technologies                                     |
+| -------------- | ------------------------------------------------ |
+| **Backend**    | FastAPI, Uvicorn                                 |
+| **Frontend**   | Streamlit                                        |
+| **AI/ML**      | LangChain, Groq (Llama 3.1), RAG, Pandas, Plotly |
+| **Database**   | ChromaDB, SQLite                                 |
+| **Deployment** | Docker, Docker Compose                           |
 
-.env: The file used to securely store your API key.
+---
 
-How to Use
-Upload a File: Use the file uploader on the Streamlit page to select a .csv, .xlsx, .pdf, or .docx file.
+## 🚀 Getting Started
 
-Submit Query: Enter a natural language query related to the uploaded file.
+### ✅ Prerequisites
 
-For Data Files: Ask questions like "What is the total sales?" or "Plot revenue trends."
+* [Docker](https://www.docker.com/) & Docker Compose installed
+* A **Groq API key**
 
-For Research Documents: Ask questions like "Summarize the paper" or "What are the key findings?"
+### 🔧 Setup Instructions
 
-The system will automatically route your query to the correct AI agent and display the response.
+1. **Clone the Repository**
+
+   ```bash
+   git clone https://github.com/your-username/insight-agent.git
+   cd insight-agent
+   ```
+
+2. **Create an Environment File**
+   In the project root, create a `.env` file and add:
+
+   ```bash
+   GROQ_API_KEY="your_groq_api_key_here"
+   ```
+
+3. **Build and Run with Docker Compose**
+
+   ```bash
+   docker compose up --build
+   ```
+
+4. **Access the App**
+   Open your browser: [http://localhost:8501](http://localhost:8501)
+
+---
+
+## 📖 How to Use
+
+1. **Upload a File** – Choose a dataset (`.csv`, `.xlsx`) or a document (`.pdf`, `.docx`).
+2. **Process the File** – Click **Upload** to send it to the backend.
+3. **Ask a Question** – Enter your query in natural language and click **Analyze**.
+
+---
+
+## 💡 Example Queries
+
+### 📊 For a Sales CSV
+
+* *"What were the total sales?"*
+* *"What is the average price of a product?"*
+* *"Plot the revenue trends by month."*
+
+### 📖 For a Research PDF
+
+* *"Summarize this paper."*
+* *"What are the main keywords?"*
+* *"What methods were used in this study?"*
+
+---
+
+## 🌟 Contributing
+
+Pull requests are welcome! For major changes, please open an issue first to discuss what you’d like to change.
+
+---
